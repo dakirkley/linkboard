@@ -46,6 +46,26 @@ describe("importBookmarksHtml", () => {
     ]);
   });
 
+  it("skips a lone wrapper folder so its subfolders become boards", () => {
+    const html = `<DL><p>
+    <DT><H3>Papaly</H3>
+    <DL><p>
+        <DT><H3>AI Dev</H3>
+        <DL><p>
+            <DT><H3>Tools</H3>
+            <DL><p><DT><A HREF="https://a.example/">A</A></DL><p>
+        </DL><p>
+        <DT><H3>Main</H3>
+        <DL><p><DT><A HREF="https://b.example/">B</A></DL><p>
+    </DL><p>
+</DL><p>`;
+    const boards = importBookmarksHtml(html, "File").boards;
+    expect(boards.map((board) => [board.name, board.categories.map((category) => category.name)])).toEqual([
+      ["AI Dev", ["Tools"]],
+      ["Main", ["General"]],
+    ]);
+  });
+
   it("round-trips its own export", () => {
     const board = makeBoard("Mine", [
       makeCategory("A & B", "#000", [makeItem('Quote "x" <y>', "https://a.example/?q=1&r=2", "note")]),

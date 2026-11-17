@@ -25,8 +25,9 @@ implementation with no Papaly code, assets or branding.
 - **Search**: press `/` to search every board by name, URL, note or category;
   use arrow keys and Enter to open a result.
 - **Import / export**: import a browser bookmarks file (Chrome, Firefox,
-  Safari, Edge); top-level folders become boards, subfolders categories. Export everything as a bookmarks
-  file, a full JSON backup, or a single board as JSON to share.
+  Safari, Edge); top-level folders become boards, subfolders categories.
+  Export everything as a bookmarks file, a full JSON backup, or a single board
+  as JSON to share.
 - Responsive layout and dark mode.
 
 Favicons load from each site's own `/favicon.ico`; no third-party icon service
