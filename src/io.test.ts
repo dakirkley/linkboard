@@ -66,6 +66,55 @@ describe("importBookmarksHtml", () => {
     ]);
   });
 
+  it("keeps a wrapper folder that holds links of its own", () => {
+    const html = `<DL><p>
+    <DT><H3>Papaly</H3>
+    <DL><p>
+        <DT><A HREF="https://x.example/">X</A>
+        <DT><H3>AI Dev</H3>
+        <DL><p>
+            <DT><H3>Tools</H3>
+            <DL><p><DT><A HREF="https://y.example/">Y</A></DL><p>
+        </DL><p>
+    </DL><p>
+</DL><p>`;
+    const boards = importBookmarksHtml(html, "File").boards;
+    expect(boards.map((board) => [board.name, board.categories.map((category) => category.name)])).toEqual([
+      ["Papaly", ["General", "AI Dev / Tools"]],
+    ]);
+  });
+
+  it("unwraps one level only", () => {
+    const html = `<DL><p>
+    <DT><H3>A</H3>
+    <DL><p>
+        <DT><H3>B</H3>
+        <DL><p>
+            <DT><H3>C</H3>
+            <DL><p>
+                <DT><H3>D</H3>
+                <DL><p><DT><A HREF="https://d.example/">D</A></DL><p>
+            </DL><p>
+        </DL><p>
+    </DL><p>
+</DL><p>`;
+    const boards = importBookmarksHtml(html, "File").boards;
+    expect(boards.map((board) => [board.name, board.categories.map((category) => category.name)])).toEqual([
+      ["B", ["C / D"]],
+    ]);
+  });
+
+  it("round-trips a single board with several categories", () => {
+    const board = makeBoard("Mine", [
+      makeCategory("One", "#000", [makeItem("A", "https://a.example/")]),
+      makeCategory("Two", "#000", [makeItem("B", "https://b.example/")]),
+    ]);
+    const boards = importBookmarksHtml(exportBookmarksHtml([board]), "Again").boards;
+    expect(boards.map((b) => [b.name, b.categories.map((category) => category.name)])).toEqual([
+      ["Mine", ["One", "Two"]],
+    ]);
+  });
+
   it("round-trips its own export", () => {
     const board = makeBoard("Mine", [
       makeCategory("A & B", "#000", [makeItem('Quote "x" <y>', "https://a.example/?q=1&r=2", "note")]),
