@@ -1,7 +1,7 @@
 import { CATEGORY_COLORS, makeBoard, makeCategory, makeItem, normalizeUrl, type Board, type Item } from "./model";
 
 export interface ImportResult {
-  board: Board;
+  boards: Board[];
   imported: number;
   /** Links whose URL was not http(s), such as javascript: bookmarklets or place: queries. */
   skipped: number;
@@ -9,21 +9,26 @@ export interface ImportResult {
 
 /**
  * Converts a browser bookmark export (Netscape bookmark file, produced by
- * Chrome, Firefox, Safari and Edge) into one board. Every folder that holds
- * links becomes a category named by its folder path; links outside any folder
- * go to "Unsorted".
+ * Chrome, Firefox, Safari and Edge) into boards. Each top-level folder becomes
+ * a board; the rest of a link's folder path names its category ("General" for
+ * links directly in the top folder). Links outside any folder go to a board
+ * named `boardName`, category "Unsorted".
  */
 export function importBookmarksHtml(html: string, boardName: string): ImportResult {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  const groups = new Map<string, Item[]>();
+  // board name -> category name -> items (Maps keep insertion order)
+  const groups = new Map<string, Map<string, Item[]>>();
   let imported = 0;
   let skipped = 0;
 
   const add = (path: string[], item: Item) => {
-    const key = path.length === 0 ? "Unsorted" : path.join(" / ");
-    const items = groups.get(key) ?? [];
+    const [boardKey = boardName, ...rest] = path;
+    const categoryKey = path.length === 0 ? "Unsorted" : rest.length === 0 ? "General" : rest.join(" / ");
+    const categories = groups.get(boardKey) ?? new Map<string, Item[]>();
+    const items = categories.get(categoryKey) ?? [];
     items.push(item);
-    groups.set(key, items);
+    categories.set(categoryKey, items);
+    groups.set(boardKey, categories);
     imported += 1;
   };
 
@@ -49,10 +54,15 @@ export function importBookmarksHtml(html: string, boardName: string): ImportResu
   const root = doc.querySelector("dl");
   if (root !== null) visit(root, []);
 
-  const categories = [...groups].map(([name, items], index) =>
-    makeCategory(name, CATEGORY_COLORS[index % CATEGORY_COLORS.length]!, items),
+  const boards = [...groups].map(([name, categories]) =>
+    makeBoard(
+      name,
+      [...categories].map(([categoryName, items], index) =>
+        makeCategory(categoryName, CATEGORY_COLORS[index % CATEGORY_COLORS.length]!, items),
+      ),
+    ),
   );
-  return { board: makeBoard(boardName, categories), imported, skipped };
+  return { boards, imported, skipped };
 }
 
 /** DT elements of a DL, looking through the <p> wrappers browsers emit. */

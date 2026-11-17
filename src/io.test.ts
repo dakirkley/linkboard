@@ -23,19 +23,26 @@ const chromeExport = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 </DL><p>`;
 
 describe("importBookmarksHtml", () => {
-  it("turns folders into categories by path, keeps notes, and skips non-web links", () => {
+  it("turns top folders into boards and the rest of the path into categories", () => {
     const result = importBookmarksHtml(chromeExport, "Chrome");
     expect(result.imported).toBe(3);
     expect(result.skipped).toBe(1);
-    expect(result.board.name).toBe("Chrome");
-    const summary = result.board.categories.map((category) => [
-      category.name,
-      category.items.map((item) => `${item.name}|${item.url}|${item.note}`),
+    const summary = result.boards.map((board) => [
+      board.name,
+      board.categories.map((category) => [
+        category.name,
+        category.items.map((item) => `${item.name}|${item.url}|${item.note}`),
+      ]),
     ]);
     expect(summary).toEqual([
-      ["Bookmarks bar", ["Hacker News|https://news.ycombinator.com/|"]],
-      ["Bookmarks bar / Dev", ["MDN|https://developer.mozilla.org/|Web reference"]],
-      ["Unsorted", ["Loose link|https://example.com/|"]],
+      [
+        "Bookmarks bar",
+        [
+          ["General", ["Hacker News|https://news.ycombinator.com/|"]],
+          ["Dev", ["MDN|https://developer.mozilla.org/|Web reference"]],
+        ],
+      ],
+      ["Chrome", [["Unsorted", ["Loose link|https://example.com/|"]]]],
     ]);
   });
 
@@ -43,10 +50,11 @@ describe("importBookmarksHtml", () => {
     const board = makeBoard("Mine", [
       makeCategory("A & B", "#000", [makeItem('Quote "x" <y>', "https://a.example/?q=1&r=2", "note")]),
     ]);
-    const reimported = importBookmarksHtml(exportBookmarksHtml([board]), "Again").board;
-    expect(reimported.categories).toHaveLength(1);
-    expect(reimported.categories[0]!.name).toBe("Mine / A & B");
-    expect(reimported.categories[0]!.items[0]).toMatchObject({
+    const reimported = importBookmarksHtml(exportBookmarksHtml([board]), "Again").boards;
+    expect(reimported).toHaveLength(1);
+    expect(reimported[0]!.name).toBe("Mine");
+    expect(reimported[0]!.categories[0]!.name).toBe("A & B");
+    expect(reimported[0]!.categories[0]!.items[0]).toMatchObject({
       name: 'Quote "x" <y>',
       url: "https://a.example/?q=1&r=2",
       note: "note",
