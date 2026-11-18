@@ -86,9 +86,14 @@ function folderList(dt: Element): Element | null {
   return firstChild(dt, "H3") === null ? null : nestedList(dt);
 }
 
-/** The DL following a folder heading, wherever the browser put it. */
+/**
+ * The DL following a folder heading, wherever the browser put it. Firefox
+ * writes a <DD> description after the heading, and the HTML parser then moves
+ * the folder's DL inside that DD.
+ */
 function nestedList(dt: Element): Element | null {
-  return firstChild(dt, "DL") ?? nextElement(dt, "DL");
+  const description = nextElement(dt, "DD");
+  return firstChild(dt, "DL") ?? nextElement(dt, "DL") ?? (description && firstChild(description, "DL"));
 }
 
 /** Entries inside a folder entry; empty for links. */
